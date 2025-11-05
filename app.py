@@ -289,12 +289,26 @@ def collect_saving():
 @app.route('/loans')
 @login_required
 def manage_loans():
+    period = request.args.get('period', 'all')
+    today = datetime.now().date()
+    
     if current_user.role == 'staff':
-        loans = Loan.query.filter_by(staff_id=current_user.id).all()
+        query = Loan.query.filter_by(staff_id=current_user.id)
     else:
-        loans = Loan.query.all()
+        query = Loan.query
+    
+    if period == 'daily':
+        loans = query.filter(db.func.date(Loan.loan_date) == today).all()
+    elif period == 'monthly':
+        loans = query.filter(db.func.extract('month', Loan.loan_date) == today.month, db.func.extract('year', Loan.loan_date) == today.year).all()
+    elif period == 'yearly':
+        loans = query.filter(db.func.extract('year', Loan.loan_date) == today.year).all()
+    else:
+        loans = query.all()
+    
     staffs = User.query.filter_by(role='staff').all()
-    return render_template('manage_loans.html', loans=loans, staffs=staffs)
+    total_amount = sum(loan.amount for loan in loans)
+    return render_template('manage_loans.html', loans=loans, staffs=staffs, period=period, total_amount=total_amount)
 
 @app.route('/loan/add', methods=['GET', 'POST'])
 @login_required
@@ -368,22 +382,30 @@ def loan_collection():
 def loan_collections_history():
     staff_filter = request.args.get('staff_id', type=int)
     customer_filter = request.args.get('customer', '')
+    period = request.args.get('period', 'all')
+    today = datetime.now().date()
     
     if current_user.role == 'staff':
         query = LoanCollection.query.filter_by(staff_id=current_user.id)
-        total = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(staff_id=current_user.id).scalar() or 0
     else:
         query = LoanCollection.query
         if staff_filter:
             query = query.filter_by(staff_id=staff_filter)
-        total = db.session.query(db.func.sum(LoanCollection.amount)).scalar() or 0
+    
+    if period == 'daily':
+        query = query.filter(db.func.date(LoanCollection.collection_date) == today)
+    elif period == 'monthly':
+        query = query.filter(db.func.extract('month', LoanCollection.collection_date) == today.month, db.func.extract('year', LoanCollection.collection_date) == today.year)
+    elif period == 'yearly':
+        query = query.filter(db.func.extract('year', LoanCollection.collection_date) == today.year)
     
     if customer_filter:
         query = query.join(Customer).filter(Customer.name.contains(customer_filter))
     
     loan_collections = query.order_by(LoanCollection.collection_date.desc()).all()
+    total = sum(lc.amount for lc in loan_collections)
     staffs = User.query.filter_by(role='staff').all()
-    return render_template('loan_collections_history.html', loan_collections=loan_collections, staffs=staffs, total=total)
+    return render_template('loan_collections_history.html', loan_collections=loan_collections, staffs=staffs, total=total, period=period)
 
 @app.route('/saving_collection', methods=['GET'])
 @login_required
@@ -397,13 +419,24 @@ def saving_collection():
 @app.route('/savings')
 @login_required
 def manage_savings():
+    period = request.args.get('period', 'all')
+    today = datetime.now().date()
+    
     query = SavingCollection.query
     if current_user.role == 'staff':
         query = query.filter_by(staff_id=current_user.id)
+    
+    if period == 'daily':
+        query = query.filter(db.func.date(SavingCollection.collection_date) == today)
+    elif period == 'monthly':
+        query = query.filter(db.func.extract('month', SavingCollection.collection_date) == today.month, db.func.extract('year', SavingCollection.collection_date) == today.year)
+    elif period == 'yearly':
+        query = query.filter(db.func.extract('year', SavingCollection.collection_date) == today.year)
+    
     savings = query.all()
+    total = sum(s.amount for s in savings)
     staffs = User.query.filter_by(role='staff').all()
-    total = db.session.query(db.func.sum(SavingCollection.amount)).scalar() or 0
-    return render_template('manage_savings.html', savings=savings, staffs=staffs, total=total)
+    return render_template('manage_savings.html', savings=savings, staffs=staffs, total=total, period=period)
 
 @app.route('/daily_collections')
 @login_required
@@ -493,10 +526,12 @@ def customer_details(id):
     
     loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
     saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date.desc()).all()
+    withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date.desc()).all()
     
     total_collected = sum(lc.amount for lc in loan_collections)
+    total_withdrawn = sum(w.amount for w in withdrawals)
     
-    return render_template('customer_details.html', customer=customer, loan_collections=loan_collections, saving_collections=saving_collections, total_collected=total_collected)
+    return render_template('customer_details.html', customer=customer, loan_collections=loan_collections, saving_collections=saving_collections, total_collected=total_collected, withdrawals=withdrawals, total_withdrawn=total_withdrawn)
 
 @app.route('/customer/add', methods=['GET', 'POST'])
 @login_required
@@ -669,6 +704,17 @@ def send_message():
             flash(f'Error: {str(e)}', 'danger')
     return redirect(url_for('view_messages'))
 
+@app.route('/message/read/<int:id>')
+@login_required
+def mark_message_read(id):
+    if current_user.role == 'staff':
+        message = Message.query.get_or_404(id)
+        if message.staff_id == current_user.id:
+            message.is_read = True
+            db.session.commit()
+            flash('Message marked as read!', 'success')
+    return redirect(url_for('view_messages'))
+
 @app.route('/manage_withdrawals')
 @login_required
 def manage_withdrawals():
@@ -680,7 +726,9 @@ def manage_withdrawals():
     cash_balance_record = CashBalance.query.first()
     cash_balance = cash_balance_record.balance if cash_balance_record else 0
     total_withdrawal = sum(w.amount for w in withdrawals)
-    return render_template('manage_withdrawals.html', withdrawals=withdrawals, customers=customers, cash_balance=cash_balance, total_withdrawal=total_withdrawal)
+    savings_withdrawal = sum(w.amount for w in withdrawals if w.withdrawal_type == 'savings')
+    investment_withdrawal = sum(w.amount for w in withdrawals if w.withdrawal_type == 'investment')
+    return render_template('manage_withdrawals.html', withdrawals=withdrawals, customers=customers, cash_balance=cash_balance, total_withdrawal=total_withdrawal, savings_withdrawal=savings_withdrawal, investment_withdrawal=investment_withdrawal)
 
 @app.route('/daily_report')
 @login_required
@@ -826,6 +874,9 @@ def monthly_report():
             'is_weekend': is_weekend
         }
     
+    cash_balance_record = CashBalance.query.first()
+    cash_balance = cash_balance_record.balance if cash_balance_record else 0
+    
     return render_template('monthly_report.html', 
                          month=month, 
                          month_name=month_name, 
@@ -839,7 +890,8 @@ def monthly_report():
                          total_interest=total_interest,
                          total_monthly_expenses=total_monthly_expenses,
                          prev_remaining=prev_remaining,
-                         current_remaining=current_remaining)
+                         current_remaining=current_remaining,
+                         cash_balance=cash_balance)
 
 @app.route('/profit_loss')
 @login_required
@@ -884,9 +936,11 @@ def withdrawal_report():
         return redirect(url_for('dashboard'))
     withdrawals = Withdrawal.query.order_by(Withdrawal.date.desc()).all()
     total = sum(w.amount for w in withdrawals)
+    savings_total = sum(w.amount for w in withdrawals if w.withdrawal_type == 'savings')
+    investment_total = sum(w.amount for w in withdrawals if w.withdrawal_type == 'investment')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
-    return render_template('withdrawal_report.html', withdrawals=withdrawals, total=total, from_date=from_date, to_date=to_date)
+    return render_template('withdrawal_report.html', withdrawals=withdrawals, total=total, savings_total=savings_total, investment_total=investment_total, from_date=from_date, to_date=to_date)
 
 @app.route('/customer_details_print/<int:id>')
 @login_required
@@ -894,10 +948,10 @@ def customer_details_print(id):
     customer = Customer.query.get_or_404(id)
     loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
     saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date.desc()).all()
-    withdrawals = []
+    withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date.desc()).all()
     total_loan_collected = sum(lc.amount for lc in loan_collections)
     total_saving_collected = sum(sc.amount for sc in saving_collections)
-    total_withdrawn = 0
+    total_withdrawn = sum(w.amount for w in withdrawals)
     return render_template('customer_details_print.html', customer=customer, loan_collections=loan_collections, saving_collections=saving_collections, total_loan_collected=total_loan_collected, total_saving_collected=total_saving_collected, withdrawals=withdrawals, total_withdrawn=total_withdrawn)
 
 @app.route('/admin/staff/edit/<int:id>', methods=['GET', 'POST'])

@@ -16,10 +16,15 @@
   {% endwith %}
 
   <h2 class="mb-4">💵 Manage Savings</h2>
-  <div class="d-flex justify-content-between mb-3">
+  <div class="mb-3">
     <a href="{{ url_for('collection') }}" class="btn btn-success">➕ Add New Saving</a>
-    <h4>Total Savings: ৳{{ "{:,.2f}".format(total) }}</h4>
+    <a href="{{ url_for('manage_savings', period='daily') }}" class="btn btn-{% if period == 'daily' %}primary{% else %}outline-primary{% endif %}">📅 Daily</a>
+    <a href="{{ url_for('manage_savings', period='monthly') }}" class="btn btn-{% if period == 'monthly' %}primary{% else %}outline-primary{% endif %}">📆 Monthly</a>
+    <a href="{{ url_for('manage_savings', period='yearly') }}" class="btn btn-{% if period == 'yearly' %}primary{% else %}outline-primary{% endif %}">📊 Yearly</a>
+    <a href="{{ url_for('manage_savings', period='all') }}" class="btn btn-{% if period == 'all' %}primary{% else %}outline-primary{% endif %}">📋 All</a>
+    <button onclick="window.print()" class="btn btn-info">🖨️ Print</button>
   </div>
+  <div class="alert alert-success">Total Savings: ৳{{ "{:,.2f}".format(total) }}</div>
 
   <form method="GET" class="row g-3 mb-3">
     <div class="col-md-4">
@@ -60,5 +65,10 @@
   </table>
 
   <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅️ Back</a>
+  <style>
+    @media print {
+      .btn, form { display: none !important; }
+    }
+  </style>
 </body>
 </html>

@@ -10,29 +10,41 @@
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
+        <div class="alert alert-{{ category }} alert-dismissible fade show">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
       {% endfor %}
     {% endif %}
   {% endwith %}
 
   <h2 class="mb-4">📩 Send Message to Staff</h2>
 
-  <form method="POST" action="{{ url_for('send_message') }}">
-    <div class="mb-3">
-      <label class="form-label">Select Staff</label>
-      <select name="staff_id" class="form-control" required>
-        <option value="">-- Select Staff --</option>
-        {% for staff in staffs %}
-        <option value="{{ staff.id }}">{{ staff.name }} ({{ staff.email }})</option>
-        {% endfor %}
-      </select>
+  <div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">✍️ Compose New Message</h5>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Message</label>
-      <textarea name="content" class="form-control" rows="4" required></textarea>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('send_message') }}">
+        <div class="mb-3">
+          <label class="form-label"><strong>👥 Select Staff</strong></label>
+          <select name="staff_id" class="form-select" required>
+            <option value="">-- Select Staff Member --</option>
+            {% for staff in staffs %}
+            <option value="{{ staff.id }}">👤 {{ staff.name }} ({{ staff.email }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><strong>📝 Message Content</strong></label>
+          <textarea name="content" class="form-control" rows="5" placeholder="Type your message here..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">📤 Send Message</button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Back to Dashboard</a>
+      </form>
     </div>
-    <button type="submit" class="btn btn-success">Send Message</button>
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
-  </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

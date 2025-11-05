@@ -121,8 +121,8 @@
           <td class="text-end"><strong>৳{{ "{:,.0f}".format(total_loan_distributed|default(0)) }}</strong></td>
         </tr>
         <tr>
-          <td>মূলধন সঞ্চয় / Capital Savings:</td>
-          <td class="text-end">৳{{ "{:,.0f}".format(total_capital_savings|default(0)) }}</td>
+          <td>মূলধন সঞ্চয় / Capital Savings (Cash Balance):</td>
+          <td class="text-end">৳{{ "{:,.0f}".format(cash_balance|default(0)) }}</td>
         </tr>
         <tr class="table-success">
           <td><strong>লাভ্যাংশ / Interest:</strong></td>
