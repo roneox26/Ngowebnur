@@ -51,6 +51,30 @@ def bad_request(e):
 def home():
     return redirect(url_for('login'))
 
+@app.route('/setup', methods=['GET', 'POST'])
+def setup():
+    if User.query.filter_by(role='admin').first():
+        flash('Admin already exists!', 'info')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        try:
+            name = request.form['name']
+            email = request.form['email']
+            password = request.form['password']
+            
+            hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
+            admin = User(name=name, email=email, password=hashed_pw, role='admin')
+            db.session.add(admin)
+            db.session.commit()
+            flash('Admin created! Please login.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error: {str(e)}', 'danger')
+    
+    return render_template('setup.html')
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
