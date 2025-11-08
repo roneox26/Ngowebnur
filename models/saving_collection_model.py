@@ -7,6 +7,6 @@ class SavingCollection(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     collection_date = db.Column(db.DateTime, default=datetime.utcnow)
-    staff_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    staff_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     customer = db.relationship('Customer', backref='saving_collections')
-    staff = db.relationship('User', backref='saving_collections')
+    staff = db.relationship('User', backref='saving_collections', foreign_keys=[staff_id])

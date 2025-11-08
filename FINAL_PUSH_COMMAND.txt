@@ -1,0 +1,45 @@
+===============================================
+✅ Git Setup সম্পন্ন হয়েছে!
+===============================================
+
+এখন শুধু এই command টি রান করুন:
+
+git push -u origin main
+
+
+===============================================
+যখন Username এবং Password চাইবে:
+===============================================
+
+Username: roneox26
+Password: আপনার GitHub password অথবা Personal Access Token
+
+
+===============================================
+Personal Access Token তৈরি করতে (যদি password কাজ না করে):
+===============================================
+
+1. GitHub এ যান: https://github.com/settings/tokens
+2. "Generate new token" → "Generate new token (classic)"
+3. Note: "PythonAnywhere Deploy"
+4. Expiration: 90 days
+5. Select scopes: ✓ repo (সব)
+6. "Generate token" ক্লিক করুন
+7. Token copy করুন (এটা আর দেখাবে না!)
+8. Password এর জায়গায় এই token ব্যবহার করুন
+
+
+===============================================
+Push সফল হলে:
+===============================================
+
+✅ Code GitHub এ আপলোড হয়ে যাবে
+✅ এখন PythonAnywhere এ deploy করতে পারবেন
+✅ PYTHONANYWHERE_SETUP.txt ফাইল দেখুন
+
+
+===============================================
+Command আবার:
+===============================================
+
+git push -u origin main

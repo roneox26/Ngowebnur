@@ -1,49 +1,64 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>স্টাফ কালেকশন রিপোর্ট</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    @media print {
-      .no-print { display: none; }
-    }
-  </style>
+    <title>Staff Collection Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h2 { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .total { font-weight: bold; background-color: #e8f4f8; }
+        @media print { .no-print { display: none; } }
+    </style>
 </head>
-<body class="container mt-5">
-  <div class="no-print mb-3">
-    <a href="{{ url_for('manage_staff') }}" class="btn btn-secondary">⬅️ Back</a>
-    <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
+<body>
+    <button class="no-print" onclick="window.print()">🖨️ Print</button>
+    <button class="no-print" onclick="window.close()">❌ Close</button>
     
-    <form method="get" class="d-inline-block ms-3">
-      <label class="me-2">তারিখ:</label>
-      <input type="date" name="date" value="{{ selected_date }}" class="form-control d-inline-block" style="width: auto;">
-      <button type="submit" class="btn btn-success">দেখুন</button>
-    </form>
-  </div>
-
-  <div class="text-center mb-5">
-    <h4 class="text-primary">আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লি:</h4>
-    <h5>স্টাফ দৈনিক কালেকশন রিপোর্ট</h5>
-    <h5 class="text-primary">{{ staff.name }}</h5>
-    <p>তারিখ: {{ report_date }}</p>
-  </div>
-
-  <table class="table table-bordered table-lg">
-    <tbody>
-      <tr class="table-primary">
-        <td><h5 class="mb-0">লোন কালেকশন</h5></td>
-        <td class="text-end"><h5 class="mb-0">৳{{ "{:,.2f}".format(total_loan) }}</h5></td>
-      </tr>
-      <tr class="table-success">
-        <td><h5 class="mb-0">সেভিংস কালেকশন</h5></td>
-        <td class="text-end"><h5 class="mb-0">৳{{ "{:,.2f}".format(total_saving) }}</h5></td>
-      </tr>
-      <tr class="table-info">
-        <td><h4 class="mb-0"><strong>সর্বমোট কালেকশন</strong></h4></td>
-        <td class="text-end"><h4 class="mb-0"><strong>৳{{ "{:,.2f}".format(total_loan + total_saving) }}</strong></h4></td>
-      </tr>
-    </tbody>
-  </table>
+    <h2>Staff Collection Report</h2>
+    <p><strong>Staff:</strong> {{ staff.name }}</p>
+    
+    <h3>Loan Collections</h3>
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Amount</th>
+        </tr>
+        {% for lc in loan_collections %}
+        <tr>
+            <td>{{ lc.collection_date.strftime('%d-%m-%Y') }}</td>
+            <td>{{ lc.customer.name }}</td>
+            <td>৳{{ lc.amount }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total">
+            <td colspan="2">Total</td>
+            <td>৳{{ total_loan }}</td>
+        </tr>
+    </table>
+    
+    <h3>Savings Collections</h3>
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Amount</th>
+        </tr>
+        {% for sc in saving_collections %}
+        <tr>
+            <td>{{ sc.collection_date.strftime('%d-%m-%Y') }}</td>
+            <td>{{ sc.customer.name }}</td>
+            <td>৳{{ sc.amount }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total">
+            <td colspan="2">Total</td>
+            <td>৳{{ total_saving }}</td>
+        </tr>
+    </table>
+    
+    <p><strong>Grand Total: ৳{{ total_loan + total_saving }}</strong></p>
 </body>
 </html>
